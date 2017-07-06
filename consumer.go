@@ -41,6 +41,20 @@ func consumeEvents(consumer sarama.PartitionConsumer) {
 					if err = json.Unmarshal(msgVal, &event); err == nil {
 						bankAccount, err = event.Process()
 					}
+				case "WithdrawEvent":
+					event := new(WithdrawEvent)
+					if err = json.Unmarshal(msgVal, &event); err == nil {
+						bankAccount, err = event.Process()
+					}
+				case "TransferEvent":
+					event := new(TransferEvent)
+					if err = json.Unmarshal(msgVal, &event); err == nil {
+						if bankAccount, err = event.Process(); err == nil {
+							if target, err := FetchAccount(event.TargetID); err == nil {
+								fmt.Printf("Target: %#v\n", *target)
+							}
+						}
+					}
 				default:
 					fmt.Println("Unkown command : ", logType)
 				}
@@ -48,7 +62,7 @@ func consumeEvents(consumer sarama.PartitionConsumer) {
 				if err != nil {
 					fmt.Printf("Error processing: %s\n", err)
 				} else {
-					fmt.Printf("%+v\n\n", *bankAccount)
+					fmt.Printf("Bank account : %#v\n\n", *bankAccount)
 				}
 			}
 		}
