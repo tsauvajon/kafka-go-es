@@ -59,3 +59,14 @@ func sendMsg(kafka sarama.SyncProducer, event interface{}) error {
 
 	return nil
 }
+
+func newKafkaConsumer() sarama.Consumer {
+	consumer, err := sarama.NewConsumer(brokers, newKafkaConfiguration())
+
+	if err != nil {
+		fmt.Printf("Kafka error: %s\n", err)
+		os.Exit(-1)
+	}
+
+	return consumer
+}
