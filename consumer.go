@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 
 	"github.com/Shopify/sarama"
+	cluster "github.com/bsm/sarama-cluster"
 )
 
-func consumeEvents(consumer sarama.PartitionConsumer) {
+func consumeEvents(consumer *cluster.Consumer) {
 	var msgVal []byte
 	var log interface{}
 	var logMap map[string]interface{}
@@ -19,9 +20,12 @@ func consumeEvents(consumer sarama.PartitionConsumer) {
 
 	for {
 		select {
-		case err := <-consumer.Errors():
-			fmt.Printf("Kafka error : %s\n", err)
+		case err, more := <-consumer.Errors():
+			if more {
+				fmt.Printf("Kafka error : %s\n", err)
+			}
 		case msg := <-consumer.Messages():
+			consumer.MarkOffset(msg, "")
 			msgVal = msg.Value
 			if err = json.Unmarshal(msgVal, &log); err != nil {
 				fmt.Printf("Failed parsing: %s", err)
@@ -70,6 +74,13 @@ func consumeEvents(consumer sarama.PartitionConsumer) {
 }
 
 func mainConsumer(partition int32) {
+	var (
+		topics = []string{topic}
+	)
+	config := cluster.NewConfig()
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	consumer, err := cluster.NewConsumer(brokers, "consumer", topics, config)
+
 	kafka := newKafkaConsumer()
 	defer kafka.Close()
 
@@ -81,7 +92,7 @@ func mainConsumer(partition int32) {
 		change it with sarama.OffsetNewest, which will only ask for the newest
 		messages that haven't been sent to us.
 	*/
-	consumer, err := kafka.ConsumePartition(topic, partition, sarama.OffsetOldest)
+	// consumer, err := kafka.ConsumePartition(topic, partition, sarama.OffsetOldest)
 
 	if err != nil {
 		fmt.Printf("Kafka error: %s\n", err)
