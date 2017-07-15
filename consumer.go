@@ -74,9 +74,6 @@ func consumeEvents(consumer *cluster.Consumer) {
 }
 
 func mainConsumer(partition int32) {
-	var (
-		topics = []string{topic}
-	)
 	config := cluster.NewConfig()
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 	consumer, err := cluster.NewConsumer(brokers, "consumer", topics, config)
